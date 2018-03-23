@@ -1,0 +1,17 @@
+Luke Horgan
+
+For Round 1, we ran the numbers 100000000000-100000000998 on 1, 4, and 16 threads.  For the second round, we ran the numbers 18446744073709551616-18446744073709551655 on 1, 4, and 16 threads.  Each trial of each round was conducted three times, and the median time was taken.  All times are reported in seconds.
+				1			4			16
+Trial 1			0.5130		0.1701		0.0620
+Trial 2			263.1		125.9		126.1
+
+The table below shows the parallel speedups for 4 and 16 threads.
+				4			16
+Trial 1			3.015		8.274
+Trial 2			2.092		2.086
+
+For the big numbers, we do not see linear speedups the way we might expect.  It's not because threads don't work right; it's because of the way we structured our code.  Factor jobs are split between threads, but the factorization itself is not.  For these particular tests, two of the forty numbers we encounter turn out to be particularly tough to factor; each one is independently responsible for about 110 seconds of CPU time.  
+
+In the single-threaded case, these two massive factorizations must happen sequentially, so we see a total time that's roughly 2x110, plus a little more time for the other 38 jobs.  Once we jump up to four threads, each 110-second factorization gets its own thread, and the rest of the numbers shared the remaining two, so we see a speedup not of 4x, but of a little better than 2x.  For 16 threads, we really see no further speedup.  Indeed, we could get nearly the full benefit of 4 threads from just 2 in this case, and after that we see rapidly diminishing returns.  In the case of 16 threads, at least in the trials we ran, it seems the overhead of spawning and joining 16 threads may even have made things very slightly worse.
+
+For the “small” number tests, the behavior is a little closer to what we might have hoped for.  Four threads is 3 times faster than 1 thread.  That's not quite a 4x speedup, but it's pretty close.  Sixteen threads, however, only bring us a speedup of about 8x.  That's half of what we would get in a perfect world. The same mechanics are still at play here.  Jobs are only so granular, and we still don't have a perfectly even division of labor between our workers, although it's closer.
